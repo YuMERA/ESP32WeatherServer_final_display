@@ -49,7 +49,6 @@
     #define sp(x)
     #define spf(x,y)
   #endif
-
   #include <ArduinoJson.h>
   #include <TimeLib.h>
   #include <WiFiClient.h>
@@ -57,6 +56,35 @@
   #include <MySQL_Cursor.h>
   #include <time.h>
 
+// #include za display
+//--------------------------------
+  #include "ani.h"
+  #include <SPI.h>
+  #include <TFT_eSPI.h> 
+  #include "Orbitron_Medium_20.h"
+
+  TFT_eSPI tft = TFT_eSPI(135,240); 
+
+  #define TFT_GREY  0x5AEB
+  #define lightblue 0x01E9
+  #define darkred   0xA041
+  #define blue      0x5D9B
+
+  const int pwmFreq = 5000;
+  const int pwmResolution = 8;
+  const int pwmLedChannelTFT = 0;
+  String town="Sid";    //EDDIT
+  String Country="RS";  //EDDIT
+  int backlight[5] = {10,30,60,120,220};
+  byte b=1;
+
+  int count=0;
+  bool inv=1;
+  int press1=0; 
+  int press2=0;////
+  int frame=0;
+  String curSeconds="";
+  
 // Moji #include fajlovi
 //--------------------------------
   #include "style_css.h"
@@ -124,8 +152,8 @@
 // General Variables
 //--------------------------------------------------------------------------------------------------
   #define Alt "132"                     // Altitude
-  unsigned long previousMillis = 0;     // will store last temp was read
-  const long interval = 50000;          // interval at which to read sensor
+  unsigned long previousMillis = 0;     // memorisanje prethodnog vremena
+  const long interval = 50000;          // interval sa kojim zelimo da citamo sensor
   String content;                       // html kod servera
   String cIp="(null)";                  // string IP adresa za svakog klijenta koji preko veba pristupi weatherstanici
   String Tem="(null)";                  // izmerena temperatura
@@ -153,7 +181,7 @@
   String airQuality = "n/a";            // kvalitet vazduha engleski
   String _airQuality = "Nema ažuriranja";// kvalitet vazduha srpski
   String _color = "Black";              // kolor teksta za kvaliret vazduha
-  //#define klima                         // Ako je klimerko u funkciji ako nije onda reemitujem preuzete podatke
+  //#define klima                       // Ako je klimerko u funkciji ako nije onda reemitujem preuzete podatke
 
 // Air Pollution
 //--------------------------------------------------------------------------------------------------
@@ -171,6 +199,8 @@
 //--------------------------------------------------------------------------------------------------
   #define UTC (1)                       // time zone "+01:00"
   byte tz = 2;                          // Time zone +1 default. Letnje racunjanje vremena +2
+  // Set offset time in seconds to adjust for your timezone, for example:
+  // GMT +1 = 3600
   int timezone = 1 * 3600;              // 3600 za +1 i 7200 za +2 (letnje racunjanje vremena)
   int dst = 1;                          // 1 - aktivno, 0 - neaktivno letnje racunjanje vremena
     
@@ -204,8 +234,22 @@
   String ip_isp = "";                   // root["isp"]
   String ip_message = "";               // root["message"]
 
-
 void setup() {
+
+  //TFT Display
+  //-----------------------------------------------------------
+  pinMode(0,INPUT_PULLUP);
+  pinMode(35,INPUT);
+  tft.init();
+  tft.setRotation(0);
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE,TFT_BLACK);
+  tft.setTextSize(1);
+
+  ledcSetup(pwmLedChannelTFT, pwmFreq, pwmResolution);
+  ledcAttachPin(TFT_BL, pwmLedChannelTFT);
+  ledcWrite(pwmLedChannelTFT, backlight[b]);
+ //------------------------------------------------------------
   delay(5000);
   Serial.begin(115200);
   // obavest o programu i garanciji !!!
@@ -218,6 +262,7 @@ void setup() {
   
   for(uint8_t t = 4; t > 0; t--) {
     spf("   [StartUp] WAIT %d...\n", t);
+    tft.printf (" WAIT -> %d...\n", t);
     Serial.flush();
     delay(1000);
   }
@@ -227,6 +272,9 @@ void setup() {
   WiFi.config(mystaticip, mygateway, mysubnet, mygateway);
   WiFi.mode(WIFI_AP_STA);//WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, passphrase);
+
+  tft.print("Connecting to ");
+  tft.println(ssid);
   
   spf("\n Station connecting to %s SSID\n", ssid);
 
@@ -238,6 +286,44 @@ void setup() {
     spf("   Signal Strength: %d dBm\n", WiFi.RSSI());
     sp("   ESP Board MAC Address:  ");
     spln(WiFi.macAddress());
+
+    tft.println("IP address: ");
+    tft.println(WiFi.localIP());
+    delay(500);
+    tft.setTextColor(TFT_WHITE,TFT_BLACK);
+    tft.setTextSize(1);
+    tft.fillScreen(TFT_BLACK);
+    tft.setSwapBytes(true);
+        
+        tft.setTextColor(blue, TFT_BLACK);
+        tft.setCursor(30, 232, 1);
+        tft.println(WiFi.localIP());
+
+        tft.setTextColor(TFT_GREEN, TFT_BLACK);
+        tft.setCursor(80, 198, 1);
+        tft.println("BRIGHT");
+        tft.setCursor(4, 152, 2);
+        tft.println("tmp C");
+
+        tft.setCursor(4, 192, 2);
+        tft.println("hum %");
+
+        tft.setCursor(80, 152, 2);
+        tft.println("pre hPa");
+        
+        tft.setTextColor(TFT_WHITE,TFT_BLACK);
+        tft.setFreeFont(&Orbitron_Medium_20);
+        tft.setCursor(6, 82);
+        tft.println(town + ", " + Country);
+
+        tft.fillRect(1,1,148,45,TFT_RED);
+        tft.setTextColor(TFT_WHITE,TFT_RED);
+        tft.setCursor(24,30);
+        tft.println("m e r a");
+
+        tft.fillRect(65,151,1,74,TFT_GREY);
+        for(int i=0;i<b+1;i++)
+          tft.fillRect(78+(i*7),216,3,10,blue);
   }else{
     spln(" failed!");
     spln(" ESP goes to restart");
@@ -309,7 +395,41 @@ bool testWifi(void){
 }
 
 void loop(){
+
+   tft.pushImage(0, 88,  135, 65, ani[frame]);
+   frame++;
+   if(frame>=10)
+   frame=0;
+
+   if(digitalRead(35)==0){
+   if(press2==0)
+   {press2=1;
+   tft.fillRect(78,216,44,12,TFT_BLACK);
+ 
+   b++;
+   if(b>=5)
+   b=0;
+
+   for(int i=0;i<b+1;i++)
+   tft.fillRect(78+(i*7),216,3,10,blue);
+   ledcWrite(pwmLedChannelTFT, backlight[b]);}
+   }else press2=0;
+
+   if(digitalRead(0)==0){
+   if(press1==0)
+   {press1=1;
+   inv=!inv;
+   tft.invertDisplay(inv);}
+   }else press1=0;
+   
+   if(count==0)
+   count++;
+   if(count>2000)
+   count=0;
+   
+   
   server.handleClient();
+  delay (200);
 }
 
 void getIpCondition(){
@@ -756,6 +876,25 @@ void handleInput() {// Ovde se hendluje strana kada dolaze izmerene vrednosti
   Rsi = server.arg("RSSI");             // Jacina wifi signala
   Tmb = server.arg("TempInCase");       // Temperatura u kucistu sa BME280 
   Slp = server.arg("SeaLevelPressure"); // Nadmoraka visina na osnovu pritiska
+
+  tft.setFreeFont(&Orbitron_Medium_20);
+  tft.setTextColor(TFT_RED,TFT_BLACK);
+  tft.fillRect(1,167,62,20,TFT_BLACK);
+  tft.setCursor(2, 187);
+  String temperatura = String(round(Tem.toFloat()),0);
+  temperatura.trim();
+  tft.println(temperatura);
+ 
+  tft.setTextColor(TFT_WHITE,TFT_BLACK);
+  tft.fillRect(1,207,62,20,TFT_BLACK);
+  tft.setCursor(2, 227);
+  tft.println(Hum);
+
+  tft.fillRect(70,167,85,20,TFT_BLACK);
+  tft.setCursor(70, 187);
+  String pritisak = String(round(Pre.toFloat()),0);
+  pritisak.trim();
+  tft.println(pritisak);
   
   server.send(200, "text/plain", "OK!");// Send HTTP status 200 (Ok) and send some text to the browser/client
 
