@@ -198,7 +198,7 @@
 // Time variable
 //--------------------------------------------------------------------------------------------------
   #define UTC (1)                       // time zone "+01:00"
-  byte tz = 2;                          // Time zone +1 default. Letnje racunjanje vremena +2
+  byte tz = 1;                          // Time zone +1 default. Letnje racunjanje vremena +2
   // Set offset time in seconds to adjust for your timezone, for example:
   // GMT +1 = 3600
   int timezone = 1 * 3600;              // 3600 za +1 i 7200 za +2 (letnje racunjanje vremena)
