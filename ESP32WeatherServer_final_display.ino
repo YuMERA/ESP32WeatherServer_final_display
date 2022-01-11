@@ -396,38 +396,39 @@ bool testWifi(void){
 
 void loop(){
 
-   tft.pushImage(0, 88,  135, 65, ani[frame]);
-   frame++;
-   if(frame>=10)
-   frame=0;
+  tft.pushImage(0, 88,  135, 65, ani[frame]);
+  frame++;
+  if(frame>=10)
+    frame=0;
 
-   if(digitalRead(35)==0){
-   if(press2==0)
-   {press2=1;
-   tft.fillRect(78,216,44,12,TFT_BLACK);
+  if(digitalRead(35)==0){
+    if(press2==0){
+      press2=1;
+      tft.fillRect(78,216,44,12,TFT_BLACK);
  
-   b++;
-   if(b>=5)
-   b=0;
+      b++;
+      if(b>=5)
+        b=0;
 
-   for(int i=0;i<b+1;i++)
-   tft.fillRect(78+(i*7),216,3,10,blue);
-   ledcWrite(pwmLedChannelTFT, backlight[b]);}
-   }else press2=0;
+      for(int i=0;i<b+1;i++)
+        tft.fillRect(78+(i*7),216,3,10,blue);
+      ledcWrite(pwmLedChannelTFT, backlight[b]);
+    }
+  }else press2=0;
 
-   if(digitalRead(0)==0){
-   if(press1==0)
-   {press1=1;
-   inv=!inv;
-   tft.invertDisplay(inv);}
-   }else press1=0;
+  if(digitalRead(0)==0){
+    if(press1==0){
+      press1=1;
+      inv=!inv;
+      tft.invertDisplay(inv);
+    }
+  }else press1=0;
    
-   if(count==0)
-   count++;
-   if(count>2000)
-   count=0;
-   
-   
+  if(count==0)
+    count++;
+  if(count>2000)
+    count=0;
+     
   server.handleClient();
   delay (200);
 }
@@ -492,33 +493,34 @@ void getIpCondition(){
     }
     http.end();   // Close connection
   }
-
-  char buf[400];
-  sprintf(buf,"INSERT INTO nUm8euijbj.ip_client (ip_query,ip_status,ip_country,ip_countryCode,ip_region,ip_regionName,ip_city,ip_timezone,ip_isp,ip_message) "
-              "VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" , 
-              ip_query.c_str(), ip_status, ip_country, ip_countryCode, ip_region, ip_regionName.c_str(), ip_city, ip_timezone.c_str(), ip_isp.c_str(), ip_message.c_str()); 
-  
-  spln("\n Send client data to MySQL database.");
-  
-  MySQL_connect(); // Connecting to SQL... 
-  
-  if (conn.connected()){
-    cursor->execute("SET character_set_client = 'UTF8MB4';");
-    cursor->execute("SET character_set_connection='UTF8MB4';");
-    cursor->execute("SET character_set_results='UTF8MB4';");
+  if(ip_status == "success"){
+    char buf[400];
+    sprintf(buf,"INSERT INTO nUm8euijbj.ip_client (ip_query,ip_status,ip_country,ip_countryCode,ip_region,ip_regionName,ip_city,ip_timezone,ip_isp,ip_message) "
+                "VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" , 
+                ip_query.c_str(), ip_status, ip_country, ip_countryCode, ip_region, ip_regionName.c_str(), ip_city, ip_timezone.c_str(), ip_isp.c_str(), ip_message.c_str()); 
     
-    spln(" SQL Query : " + String(buf));
-    if(cursor->execute(buf)){
-      spln(" Success stored IP condition data to MySQL database.\n");
-    }else{
-      spln(" IP data record failed!");
-    }
-    delay(50);
-    delete cursor;
+    spln("\n Send client data to MySQL database.");
+    
+    MySQL_connect(); // Connecting to SQL... 
+    
+    if (conn.connected()){
+      cursor->execute("SET character_set_client = 'UTF8MB4';");
+      cursor->execute("SET character_set_connection='UTF8MB4';");
+      cursor->execute("SET character_set_results='UTF8MB4';");
+      
+      spln(" SQL Query : " + String(buf));
+      if(cursor->execute(buf)){
+        spln(" Success stored IP condition data to MySQL database.\n");
+      }else{
+        spln(" IP data record failed!");
+      }
+      delay(50);
+      delete cursor;
 
-  }else{
-    spln(" Connection failed.\n");
-    conn.close();          
+    }else{
+      spln(" Connection failed.\n");
+      conn.close();          
+    }
   }
 }
 void getWeatherCondition(){// Json podaci koje preuzimam sa drugih meteo servera. Jos uvek nisam zavrsio kompletna merenja kod mene na stanici
@@ -745,7 +747,7 @@ void handleJson(){// Kreiram stranu na kojoj je samo text po Json standardu. Ovo
                    "    \"station\": {\n"
                    "        \"name\": \"Meteo Station MERA\",\n"
                    "        \"city\": \"Šid\",\n"
-                   "        \"link\": \"http://109.94.233.37:3003/\",\n"
+                   "        \"link\": \"http://109.72.53.172:3003/\",\n"
                    "        \"lat\": %f,\n"
                    "        \"lon\": %f,\n"
                    "        \"alt\": %s\n"
