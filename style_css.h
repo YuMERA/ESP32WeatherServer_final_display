@@ -119,9 +119,8 @@ nav {
     width: auto;
     display: flex;}
 .left-w-content {
-    width: 50%; 
-    margin-top: 1rem;
-    padding: 5px; 
+    width: 50%;
+    padding: 15px 0px; 
     font-family: "Oswald", Arial, sans-serif; 
     font-size: 52px;
     font-weight: 600;
